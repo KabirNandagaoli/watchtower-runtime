@@ -1,40 +1,41 @@
 # Watchtower
 
-**Secure what AI does.** Watchtower is a Linux-first runtime and control-plane MVP for autonomous AI agents.
+Watchtower is an experimental control plane for autonomous-agent actions. It makes task-scoped authority visible and includes a narrow, real local-runtime prototype alongside a clearly separate policy simulation lab.
 
-## Honest scope
+## What works now
 
-The dashboard, policy decisions, action log, task compiler, and Security Lab are **simulated web-demo controls**. They demonstrate a product workflow; they do not secure a host or contain an arbitrary agent.
+`ControlledRuntime` mediates selected local filesystem and process requests in a dedicated temporary workspace. It resolves paths before acting, blocks absolute paths and traversal outside that workspace, rejects `~` credential paths, and starts only the approved `git` and `pytest` commands. A blocked mediated request is not opened or executed: its audit event reports `BLOCK`, `BLOCKED_AT_RUNTIME`, and `DENIED`.
 
-`runtime/linux_runtime.py` is an experimental Linux-only launcher which invokes `unshare` when available. It is not a complete sandbox, security boundary, or production-ready isolation layer. It is intentionally unavailable on macOS and Windows.
+The **LIVE RUNTIME** UI calls this endpoint. The **Policy Simulation Lab** calls the in-memory policy engine only; it is not host-level enforcement.
 
-## Run
+## Run locally
 
 ```bash
+cd /Users/apple/Desktop/watchtower
 python3 -m venv .venv
 source .venv/bin/activate
-make install
-make test
-make run
+python -m pip install -r requirements.txt
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open http://127.0.0.1:8000. Use the Security Lab to run six prebuilt scenarios or create an agent from the dashboard.
+Open http://127.0.0.1:8000. Run tests with `python -m pytest -q`.
 
-## What is real vs simulated
+## Runtime proof
 
-| Capability | Status |
-| --- | --- |
-| Dashboard, API, deterministic policy evaluation, audit records | Real application behavior |
-| Lab action results and policy classifications | Simulated demo policy decisions |
-| Task-to-boundary compiler | Deterministic prototype, not policy generation |
-| Linux namespace launcher | Experimental implementation, Linux only |
-| Host-level enforcement, secrets protection, production isolation | Not implemented |
+```bash
+curl -X POST http://127.0.0.1:8000/api/runtime/actions \
+  -H 'content-type: application/json' \
+  -d '{"operation":"read","target":"../../outside"}'
+```
 
-## Structure
+The response is a real mediated denial: `policy_decision: BLOCK`, `enforcement_status: BLOCKED_AT_RUNTIME`, and `actual_result: DENIED`.
 
-- `backend/` FastAPI API, models, policy engine, compiler
-- `frontend/` vanilla HTML/CSS/JavaScript dashboard
-- `runtime/` experimental Linux namespace launcher
-- `attacks/` Security Lab scenario definitions
-- `tests/` API and policy tests
-- `docs/` architecture notes
+## Free and Cloud
+
+The MVP tracks up to 100 web runtime-action requests in memory. Once reached, the web endpoint returns 429; direct local/open-source `ControlledRuntime` usage remains available. Cloud Early Access stores name, work email, company, and use case only in memory and is not publicly listed; records disappear at restart.
+
+Watchtower Cloud is planned, not available. Planned capabilities include centralized policies, persistent audit history, fleet management, team/RBAC, analytics, integrations, private deployment, and SSO/compliance.
+
+## Limitations
+
+This is not a complete OS sandbox or production endpoint-security product. Enforcement applies only to operations mediated through `ControlledRuntime`; a hosted dashboard cannot secure a visitor's computer. Runtime/process policy is intentionally narrow, state is in memory, and the optional Linux namespace support is experimental.

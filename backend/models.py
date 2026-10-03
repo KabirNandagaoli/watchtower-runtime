@@ -33,6 +33,19 @@ class ActionRequest(BaseModel):
     amount: Optional[float] = None
     context: dict[str, Any] = {}
 
+class RuntimeActionRequest(BaseModel):
+    agent_id: str = "demo-agent"
+    operation: str
+    target: str = ""
+    content: str = ""
+    command: list[str] = []
+
+class EarlyAccessSignup(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    email: str = Field(min_length=5, max_length=254)
+    company: str = Field(min_length=1, max_length=120)
+    ai_use_case: str = Field(min_length=5, max_length=1000)
+
 class SecurityEvent(BaseModel):
     id: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -43,6 +56,9 @@ class SecurityEvent(BaseModel):
     reason: str
     rule: str
     enforcement: str = "SIMULATED WEB-DEMO POLICY — no host action was intercepted"
+    policy_decision: Optional[Decision] = None
+    enforcement_status: Optional[str] = None
+    actual_result: Optional[str] = None
     details: dict[str, Any] = {}
 
 class Boundary(BaseModel):
